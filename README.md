@@ -1,22 +1,22 @@
 # dates-webservice
 
-The **DatesAPI** webservice (accessible at https://api.datesapi.net/) answers a few date related questions. I wish to work with those values often in automation services like Zapier or Integromat. Because I haven't found a simple enough solution I quickly built my own service. Feel free to use this service.
+The **DatesAPI** webservice (accessible at https://api.datesapi.net/) answers a few date related questions. I wish to work with those values often in automation services like [Zapier](https://zapier.com/) or [Integromat](https://www.integromat.com/). Because I haven't found a simple enough solution I quickly built my own service. Feel free to use this service.
 
 ## endpoints
 
 The API offers these endpoints via HTTP GET requests and answers with a simple JSON struct.
 
-- /
-- /status
-- /this-month
-- /next-month
-- /last-month
-- /this-year
-- /next-year
-- /last-year
-- /today
-- /tomorrow
-- /yesterday
+- [/](https://api.datesapi.net/)
+- [/status](https://api.datesapi.net/status)
+- [/this-month](https://api.datesapi.net/this-month)
+- [/next-month](https://api.datesapi.net/next-month)
+- [/last-month](https://api.datesapi.net/last-month)
+- [/this-year](https://api.datesapi.net/this-year)
+- [/next-year](https://api.datesapi.net/next-year)
+- [/last-year](https://api.datesapi.net/last-year)
+- [/today](https://api.datesapi.net/today)
+- [/tomorrow](https://api.datesapi.net/tomorrow)
+- [/yesterday](https://api.datesapi.net/yesterday)
 
 ## Formatting
 
