@@ -17,6 +17,7 @@ The API offers these endpoints via HTTP GET requests and answers with a simple J
 - [/today](https://api.datesapi.net/today)
 - [/tomorrow](https://api.datesapi.net/tomorrow)
 - [/yesterday](https://api.datesapi.net/yesterday)
+- [/timestamp](https://api.datesapi.net/timestamp)
 
 ## Formatting
 

@@ -34,6 +34,7 @@ func main() {
 	r.HandleFunc("/last-month", processLastMonth).Methods("GET")
 	r.HandleFunc("/this-month", processThisMonth).Methods("GET")
 	r.HandleFunc("/next-month", processNextMonth).Methods("GET")
+	r.HandleFunc("/timestamp", processTimestamp).Methods("GET")
 	r.HandleFunc("/status", processStatus).Methods("GET")
 	log.Print("Starting server on " + getServerPort())
 	http.ListenAndServe(getServerPort(), r)
@@ -294,6 +295,24 @@ func processNextMonth(w http.ResponseWriter, r *http.Request) {
 
 	result := answer{
 		Result:        yearMonth,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(result)
+
+}
+
+func processTimestamp(w http.ResponseWriter, r *http.Request) {
+
+	logRequest()
+
+	type answer struct {
+		Result        int64    `json:"result"`
+	}
+
+	result := answer{
+		Result:        time.Now().Unix(),
 	}
 
 	w.Header().Set("Content-Type", "application/json")
