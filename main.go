@@ -3,7 +3,9 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/jakoubek/dates-webservice/dates"
 	"github.com/jakoubek/dates-webservice/requestlogger"
+	_ "github.com/jakoubek/dates-webservice/l10n"
 	"log"
 	"net/http"
 	"os"
@@ -15,8 +17,6 @@ import (
 var starttime time.Time
 var requests int64
 var requestsOld int64
-
-var defaultTodayFormat string = "2006-01-02"
 
 func main() {
 	starttime = time.Now()
@@ -80,6 +80,7 @@ func rootInfo(w http.ResponseWriter, r *http.Request) {
 		"https://api.datesapi.net/today",
 		"https://api.datesapi.net/tomorrow",
 		"https://api.datesapi.net/yesterday",
+		"https://api.datesapi.net/timestamp",
 	}
 
 	response := result{
@@ -94,11 +95,6 @@ func rootInfo(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func parseQueryString(r *http.Request) string {
-	dateFormat := r.URL.Query().Get("format")
-	return dateFormat
-}
-
 func processToday(w http.ResponseWriter, r *http.Request) {
 
 	logRequest()
@@ -107,18 +103,12 @@ func processToday(w http.ResponseWriter, r *http.Request) {
 		Result        string    `json:"result"`
 	}
 
-	//formats := dates.NewDateFormats()
-	//formats.
-
-	dateFormat := parseQueryString(r)
-	if dateFormat == "" {
-		dateFormat = defaultTodayFormat
-	}
-
-	today := time.Now().Format(dateFormat)
+	dc := dates.NewDateCore(
+		dates.WithFormat(r.URL.Query().Get("format")),
+		)
 
 	result := answer{
-		Result:        today,
+		Result:        dc.Today(),
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -135,18 +125,12 @@ func processTomorrow(w http.ResponseWriter, r *http.Request) {
 		Result        string    `json:"result"`
 	}
 
-	//formats := dates.NewDateFormats()
-	//formats.
-
-	dateFormat := parseQueryString(r)
-	if dateFormat == "" {
-		dateFormat = defaultTodayFormat
-	}
-
-	today := time.Now().AddDate(0, 0, 1).Format(dateFormat)
+	dc := dates.NewDateCore(
+		dates.WithFormat(r.URL.Query().Get("format")),
+		)
 
 	result := answer{
-		Result:        today,
+		Result:        dc.Tomorrow(),
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -163,18 +147,12 @@ func processYesterday(w http.ResponseWriter, r *http.Request) {
 		Result        string    `json:"result"`
 	}
 
-	//formats := dates.NewDateFormats()
-	//formats.
-
-	dateFormat := parseQueryString(r)
-	if dateFormat == "" {
-		dateFormat = defaultTodayFormat
-	}
-
-	today := time.Now().AddDate(0, 0, -1).Format(dateFormat)
+	dc := dates.NewDateCore(
+		dates.WithFormat(r.URL.Query().Get("format")),
+		)
 
 	result := answer{
-		Result:        today,
+		Result:        dc.Yesterday(),
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -191,10 +169,10 @@ func processThisYear(w http.ResponseWriter, r *http.Request) {
 		Result        string    `json:"result"`
 	}
 
-	year := time.Now().Format("2006")
+	dc := dates.NewDateCore()
 
 	result := answer{
-		Result:        year,
+		Result:        dc.ThisYear(),
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -211,10 +189,10 @@ func processLastYear(w http.ResponseWriter, r *http.Request) {
 		Result        string    `json:"result"`
 	}
 
-	year := time.Now().AddDate(-1, 0, 0).Format("2006")
+	dc := dates.NewDateCore()
 
 	result := answer{
-		Result:        year,
+		Result:        dc.LastYear(),
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -231,10 +209,10 @@ func processNextYear(w http.ResponseWriter, r *http.Request) {
 		Result        string    `json:"result"`
 	}
 
-	year := time.Now().AddDate(1, 0, 0).Format("2006")
+	dc := dates.NewDateCore()
 
 	result := answer{
-		Result:        year,
+		Result:        dc.NextYear(),
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -251,10 +229,13 @@ func processLastMonth(w http.ResponseWriter, r *http.Request) {
 		Result        string    `json:"result"`
 	}
 
-	yearMonth := time.Now().AddDate(0, -1, 0).Format("January 2006")
+	dc := dates.NewDateCore(
+		dates.WithLanguage(r.URL.Query().Get("lang")),
+		dates.WithFormat(r.URL.Query().Get("format")),
+		)
 
 	result := answer{
-		Result:        yearMonth,
+		Result:        dc.LastMonth(),
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -271,10 +252,13 @@ func processThisMonth(w http.ResponseWriter, r *http.Request) {
 		Result        string    `json:"result"`
 	}
 
-	yearMonth := time.Now().AddDate(0, 0, 0).Format("January 2006")
+	dc := dates.NewDateCore(
+		dates.WithLanguage(r.URL.Query().Get("lang")),
+		dates.WithFormat(r.URL.Query().Get("format")),
+		)
 
 	result := answer{
-		Result:        yearMonth,
+		Result:        dc.ThisMonth(),
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -291,10 +275,13 @@ func processNextMonth(w http.ResponseWriter, r *http.Request) {
 		Result        string    `json:"result"`
 	}
 
-	yearMonth := time.Now().AddDate(0, 1, 0).Format("January 2006")
+	dc := dates.NewDateCore(
+		dates.WithLanguage(r.URL.Query().Get("lang")),
+		dates.WithFormat(r.URL.Query().Get("format")),
+		)
 
 	result := answer{
-		Result:        yearMonth,
+		Result:        dc.NextMonth(),
 	}
 
 	w.Header().Set("Content-Type", "application/json")
