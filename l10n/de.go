@@ -13,7 +13,7 @@ func NewDeTranslation() *De {
 func (de *De) Translate(inputString string) string {
 	inputString = de.longMonthNames(inputString)
 	inputString = de.shortMonthNames(inputString)
-
+	inputString = de.longDayNames(inputString)
 	return inputString
 }
 

@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/jakoubek/dates-webservice/dates"
-	"github.com/jakoubek/dates-webservice/requestlogger"
 	_ "github.com/jakoubek/dates-webservice/l10n"
+	"github.com/jakoubek/dates-webservice/requestlogger"
 	"log"
 	"net/http"
 	"os"
@@ -36,8 +36,27 @@ func main() {
 	r.HandleFunc("/next-month", processNextMonth).Methods("GET")
 	r.HandleFunc("/timestamp", processTimestamp).Methods("GET")
 	r.HandleFunc("/status", processStatus).Methods("GET")
+	r.NotFoundHandler = http.HandlerFunc(NotFound)
 	log.Print("Starting server on " + getServerPort())
 	http.ListenAndServe(getServerPort(), r)
+}
+
+func NotFound(w http.ResponseWriter, r *http.Request) {
+
+	type result struct {
+		Result string `json:"result"`
+		Info   string `json:"info"`
+	}
+
+	response := &result{
+		Result: "404 Not found",
+		Info:   fmt.Sprintf("The requested resource %s was not found. Try starting with /", r.RequestURI),
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusNotFound)
+	json.NewEncoder(w).Encode(response)
+
 }
 
 func initLogWriter() {
@@ -104,6 +123,7 @@ func processToday(w http.ResponseWriter, r *http.Request) {
 	}
 
 	dc := dates.NewDateCore(
+		dates.WithLanguage(r.URL.Query().Get("lang")),
 		dates.WithFormat(r.URL.Query().Get("format")),
 		)
 
@@ -126,6 +146,7 @@ func processTomorrow(w http.ResponseWriter, r *http.Request) {
 	}
 
 	dc := dates.NewDateCore(
+		dates.WithLanguage(r.URL.Query().Get("lang")),
 		dates.WithFormat(r.URL.Query().Get("format")),
 		)
 
@@ -148,6 +169,7 @@ func processYesterday(w http.ResponseWriter, r *http.Request) {
 	}
 
 	dc := dates.NewDateCore(
+		dates.WithLanguage(r.URL.Query().Get("lang")),
 		dates.WithFormat(r.URL.Query().Get("format")),
 		)
 
