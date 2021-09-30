@@ -34,6 +34,7 @@ func main() {
 	r.HandleFunc("/last-month", processLastMonth).Methods("GET")
 	r.HandleFunc("/this-month", processThisMonth).Methods("GET")
 	r.HandleFunc("/next-month", processNextMonth).Methods("GET")
+	r.HandleFunc("/weeknumber", processWeeknumber).Methods("GET")
 	r.HandleFunc("/timestamp", processTimestamp).Methods("GET")
 	r.HandleFunc("/status", processStatus).Methods("GET")
 	r.NotFoundHandler = http.HandlerFunc(NotFound)
@@ -99,6 +100,7 @@ func rootInfo(w http.ResponseWriter, r *http.Request) {
 		"https://api.datesapi.net/today",
 		"https://api.datesapi.net/tomorrow",
 		"https://api.datesapi.net/yesterday",
+		"https://api.datesapi.net/weeknumber",
 		"https://api.datesapi.net/timestamp",
 	}
 
@@ -175,6 +177,26 @@ func processYesterday(w http.ResponseWriter, r *http.Request) {
 
 	result := answer{
 		Result:        dc.Yesterday(),
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(result)
+
+}
+
+func processWeeknumber(w http.ResponseWriter, r *http.Request) {
+
+	logRequest()
+
+	type answer struct {
+		Result string `json:"result"`
+	}
+
+	dc := dates.NewDateCore()
+
+	result := answer{
+		Result: dc.Weeknumber(),
 	}
 
 	w.Header().Set("Content-Type", "application/json")

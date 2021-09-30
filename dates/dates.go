@@ -2,6 +2,7 @@ package dates
 
 import (
 	"github.com/jakoubek/dates-webservice/l10n"
+	"strconv"
 	"time"
 )
 
@@ -74,19 +75,25 @@ func (dc *DateCore) ThisMonth() string {
 }
 
 func (dc *DateCore) Today() string {
-	dc.ResultString = dc.dateObject.Format(dc.getFormat("2006-01-02"))
+	dc.ResultString = dc.getLocalization(dc.dateObject.Format(dc.getFormat("2006-01-02")))
 	return dc.ResultString
 }
 
 func (dc *DateCore) Tomorrow() string {
 	dc.dateObject = dc.dateObject.AddDate(0, 0, 1)
-	dc.ResultString = dc.dateObject.Format(dc.getFormat("2006-01-02"))
+	dc.ResultString = dc.getLocalization(dc.dateObject.Format(dc.getFormat("2006-01-02")))
 	return dc.ResultString
 }
 
 func (dc *DateCore) Yesterday() string {
 	dc.dateObject = dc.dateObject.AddDate(0, 0, -1)
-	dc.ResultString = dc.dateObject.Format(dc.getFormat("2006-01-02"))
+	dc.ResultString = dc.getLocalization(dc.dateObject.Format(dc.getFormat("2006-01-02")))
+	return dc.ResultString
+}
+
+func (dc *DateCore) Weeknumber() string {
+	_, wknr := dc.dateObject.ISOWeek()
+	dc.ResultString = strconv.Itoa(wknr)
 	return dc.ResultString
 }
 

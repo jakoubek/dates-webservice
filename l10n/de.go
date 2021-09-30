@@ -53,7 +53,7 @@ func (de *De) longDayNames(inputString string) string {
 	inputString = strings.ReplaceAll(inputString, "Monday", "Montag")
 	inputString = strings.ReplaceAll(inputString, "Tuesday", "Dienstag")
 	inputString = strings.ReplaceAll(inputString, "Wednesday", "Mittwoch")
-	inputString = strings.ReplaceAll(inputString, "Thursay", "Donnerstag")
+	inputString = strings.ReplaceAll(inputString, "Thursday", "Donnerstag")
 	inputString = strings.ReplaceAll(inputString, "Friday", "Freitag")
 	inputString = strings.ReplaceAll(inputString, "Saturday", "Samstag")
 	inputString = strings.ReplaceAll(inputString, "Sunday", "Sonntag")
