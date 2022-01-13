@@ -34,6 +34,7 @@ func main() {
 	r.HandleFunc("/last-month", processLastMonth).Methods("GET")
 	r.HandleFunc("/this-month", processThisMonth).Methods("GET")
 	r.HandleFunc("/next-month", processNextMonth).Methods("GET")
+	r.HandleFunc("/last-of-month", processLastOfMonth)
 	r.HandleFunc("/weeknumber", processWeeknumber).Methods("GET")
 	r.HandleFunc("/timestamp", processTimestamp).Methods("GET")
 	r.HandleFunc("/status", processStatus).Methods("GET")
@@ -100,6 +101,7 @@ func rootInfo(w http.ResponseWriter, r *http.Request) {
 		"https://api.datesapi.net/today",
 		"https://api.datesapi.net/tomorrow",
 		"https://api.datesapi.net/yesterday",
+		"https://api.datesapi.net/last-of-month",
 		"https://api.datesapi.net/weeknumber",
 		"https://api.datesapi.net/timestamp",
 	}
@@ -113,6 +115,29 @@ func rootInfo(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(response)
+
+}
+
+func processLastOfMonth(w http.ResponseWriter, r *http.Request) {
+
+	logRequest()
+
+	type answer struct {
+		Result        string    `json:"result"`
+	}
+
+	dc := dates.NewDateCore(
+		dates.WithLanguage(r.URL.Query().Get("lang")),
+		dates.WithFormat(r.URL.Query().Get("format")),
+	)
+
+	result := answer{
+		Result:        dc.LastOfMonth(),
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(result)
 
 }
 

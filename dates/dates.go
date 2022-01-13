@@ -40,6 +40,12 @@ func NewDateCore(opts ...DateCoreConfig) *DateCore {
 	return &dc
 }
 
+func (dc *DateCore) LastOfMonth() string {
+	dc.dateObject = dc.dateObject.AddDate(0, 0, -dc.dateObject.Day()).AddDate(0, 1, 0)
+	dc.ResultString = dc.getLocalization(dc.dateObject.Format(dc.getFormat("2006-01-02")))
+	return dc.ResultString
+}
+
 func (dc *DateCore) NextYear() string {
 	dc.dateObject = dc.dateObject.AddDate(1, 0, 0)
 	dc.ResultString = dc.dateObject.Format("2006")
