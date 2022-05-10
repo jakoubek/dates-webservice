@@ -1,46 +1,35 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/jakoubek/dates-webservice/dates"
-	_ "github.com/jakoubek/dates-webservice/l10n"
-	"github.com/jakoubek/dates-webservice/requestlogger"
 	"log"
 	"net/http"
 	"os"
 	"time"
 
-	"github.com/gorilla/mux"
+	"github.com/jakoubek/dates-webservice/dates"
+	_ "github.com/jakoubek/dates-webservice/l10n"
+	"github.com/jakoubek/dates-webservice/requestlogger"
 )
 
-var starttime time.Time
 var requests int64
 var requestsOld int64
 
-func main() {
-	starttime = time.Now()
-	loadRequestsFromFile()
-	initLogWriter()
+var version string
 
-	r := mux.NewRouter()
-	r.HandleFunc("/", rootInfo).Methods("GET")
-	r.HandleFunc("/today", processToday).Methods("GET")
-	r.HandleFunc("/tomorrow", processTomorrow).Methods("GET")
-	r.HandleFunc("/yesterday", processYesterday).Methods("GET")
-	r.HandleFunc("/this-year", processThisYear).Methods("GET")
-	r.HandleFunc("/last-year", processLastYear).Methods("GET")
-	r.HandleFunc("/next-year", processNextYear).Methods("GET")
-	r.HandleFunc("/last-month", processLastMonth).Methods("GET")
-	r.HandleFunc("/this-month", processThisMonth).Methods("GET")
-	r.HandleFunc("/next-month", processNextMonth).Methods("GET")
-	r.HandleFunc("/last-of-month", processLastOfMonth)
-	r.HandleFunc("/weeknumber", processWeeknumber).Methods("GET")
-	r.HandleFunc("/timestamp", processTimestamp).Methods("GET")
-	r.HandleFunc("/status", processStatus).Methods("GET")
-	r.NotFoundHandler = http.HandlerFunc(NotFound)
-	log.Print("Starting server on " + getServerPort())
-	http.ListenAndServe(getServerPort(), r)
+func main() {
+
+	s := NewServer("DatesAPI 1.0", getCounterfile())
+
+	s.logger.Printf("Server Version %s is starting on %s...", version, getServerPort())
+	s.logger.Printf("Counter file: %s...", getCounterfile())
+
+	s.setupRoutes()
+
+	http.ListenAndServe(getServerPort(), s.router)
+
 }
 
 func NotFound(w http.ResponseWriter, r *http.Request) {
@@ -78,15 +67,64 @@ func loadRequestsFromFile() {
 	requestsOld = requests
 }
 
+func logRequestToConsole(req string) {
+	log.Println("Logging request: ", req)
+}
+
 func logRequest() {
 	requests++
+}
+
+type logRequestBody struct {
+	Name          string `json:"name"`
+	Url           string `json:"url"`
+	Domain        string `json:"domain"`
+	RemoteAddress string `json:"-"`
+	path          string `json:"-"`
+}
+
+func NewLogRequestBody(path string, address string) *logRequestBody {
+	return &logRequestBody{
+		Name:          "pageview",
+		Url:           fmt.Sprintf("https://api.datesapi.net%s", path),
+		Domain:        "api.datesapi.net",
+		RemoteAddress: address,
+		path:          path,
+	}
+}
+
+func logRequestToPlausible(lrb *logRequestBody) {
+
+	//log.Println("Logging request:", lrb.path)
+
+	postBody, err := json.Marshal(lrb)
+	if err != nil {
+		log.Println(err.Error())
+	}
+
+	responseBody := bytes.NewBuffer(postBody)
+
+	//Leverage Go's HTTP Post function to make request
+
+	request, err := http.NewRequest("POST", "https://plausible.io/api/event", responseBody)
+	request.Header.Set("Content-Type", "application/json; charset=UTF-8")
+	request.Header.Set("User-Agent", "API")
+	request.Header.Set("X-Forwarded-For", lrb.RemoteAddress)
+
+	client := &http.Client{}
+	response, error := client.Do(request)
+	if error != nil {
+		log.Fatalf("An Error Occured %v", err)
+	}
+	defer response.Body.Close()
+
 }
 
 func rootInfo(w http.ResponseWriter, r *http.Request) {
 
 	type result struct {
-		Result string `json:"result"`
-		Info   string `json:"info"`
+		Result string   `json:"result"`
+		Info   string   `json:"info"`
 		Routes []string `json:"routes"`
 	}
 
@@ -123,7 +161,7 @@ func processLastOfMonth(w http.ResponseWriter, r *http.Request) {
 	logRequest()
 
 	type answer struct {
-		Result        string    `json:"result"`
+		Result string `json:"result"`
 	}
 
 	dc := dates.NewDateCore(
@@ -132,7 +170,7 @@ func processLastOfMonth(w http.ResponseWriter, r *http.Request) {
 	)
 
 	result := answer{
-		Result:        dc.LastOfMonth(),
+		Result: dc.LastOfMonth(),
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -146,16 +184,16 @@ func processToday(w http.ResponseWriter, r *http.Request) {
 	logRequest()
 
 	type answer struct {
-		Result        string    `json:"result"`
+		Result string `json:"result"`
 	}
 
 	dc := dates.NewDateCore(
 		dates.WithLanguage(r.URL.Query().Get("lang")),
 		dates.WithFormat(r.URL.Query().Get("format")),
-		)
+	)
 
 	result := answer{
-		Result:        dc.Today(),
+		Result: dc.Today(),
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -169,16 +207,16 @@ func processTomorrow(w http.ResponseWriter, r *http.Request) {
 	logRequest()
 
 	type answer struct {
-		Result        string    `json:"result"`
+		Result string `json:"result"`
 	}
 
 	dc := dates.NewDateCore(
 		dates.WithLanguage(r.URL.Query().Get("lang")),
 		dates.WithFormat(r.URL.Query().Get("format")),
-		)
+	)
 
 	result := answer{
-		Result:        dc.Tomorrow(),
+		Result: dc.Tomorrow(),
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -192,16 +230,16 @@ func processYesterday(w http.ResponseWriter, r *http.Request) {
 	logRequest()
 
 	type answer struct {
-		Result        string    `json:"result"`
+		Result string `json:"result"`
 	}
 
 	dc := dates.NewDateCore(
 		dates.WithLanguage(r.URL.Query().Get("lang")),
 		dates.WithFormat(r.URL.Query().Get("format")),
-		)
+	)
 
 	result := answer{
-		Result:        dc.Yesterday(),
+		Result: dc.Yesterday(),
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -235,13 +273,13 @@ func processThisYear(w http.ResponseWriter, r *http.Request) {
 	logRequest()
 
 	type answer struct {
-		Result        string    `json:"result"`
+		Result string `json:"result"`
 	}
 
 	dc := dates.NewDateCore()
 
 	result := answer{
-		Result:        dc.ThisYear(),
+		Result: dc.ThisYear(),
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -255,13 +293,13 @@ func processLastYear(w http.ResponseWriter, r *http.Request) {
 	logRequest()
 
 	type answer struct {
-		Result        string    `json:"result"`
+		Result string `json:"result"`
 	}
 
 	dc := dates.NewDateCore()
 
 	result := answer{
-		Result:        dc.LastYear(),
+		Result: dc.LastYear(),
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -275,13 +313,13 @@ func processNextYear(w http.ResponseWriter, r *http.Request) {
 	logRequest()
 
 	type answer struct {
-		Result        string    `json:"result"`
+		Result string `json:"result"`
 	}
 
 	dc := dates.NewDateCore()
 
 	result := answer{
-		Result:        dc.NextYear(),
+		Result: dc.NextYear(),
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -295,16 +333,16 @@ func processLastMonth(w http.ResponseWriter, r *http.Request) {
 	logRequest()
 
 	type answer struct {
-		Result        string    `json:"result"`
+		Result string `json:"result"`
 	}
 
 	dc := dates.NewDateCore(
 		dates.WithLanguage(r.URL.Query().Get("lang")),
 		dates.WithFormat(r.URL.Query().Get("format")),
-		)
+	)
 
 	result := answer{
-		Result:        dc.LastMonth(),
+		Result: dc.LastMonth(),
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -318,16 +356,16 @@ func processThisMonth(w http.ResponseWriter, r *http.Request) {
 	logRequest()
 
 	type answer struct {
-		Result        string    `json:"result"`
+		Result string `json:"result"`
 	}
 
 	dc := dates.NewDateCore(
 		dates.WithLanguage(r.URL.Query().Get("lang")),
 		dates.WithFormat(r.URL.Query().Get("format")),
-		)
+	)
 
 	result := answer{
-		Result:        dc.ThisMonth(),
+		Result: dc.ThisMonth(),
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -341,16 +379,16 @@ func processNextMonth(w http.ResponseWriter, r *http.Request) {
 	logRequest()
 
 	type answer struct {
-		Result        string    `json:"result"`
+		Result string `json:"result"`
 	}
 
 	dc := dates.NewDateCore(
 		dates.WithLanguage(r.URL.Query().Get("lang")),
 		dates.WithFormat(r.URL.Query().Get("format")),
-		)
+	)
 
 	result := answer{
-		Result:        dc.NextMonth(),
+		Result: dc.NextMonth(),
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -364,11 +402,11 @@ func processTimestamp(w http.ResponseWriter, r *http.Request) {
 	logRequest()
 
 	type answer struct {
-		Result        int64    `json:"result"`
+		Result int64 `json:"result"`
 	}
 
 	result := answer{
-		Result:        time.Now().Unix(),
+		Result: time.Now().Unix(),
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -377,28 +415,27 @@ func processTimestamp(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func processStatus(w http.ResponseWriter, r *http.Request) {
-
-	type answer struct {
-		Result        string    `json:"result"`
-		Info          string    `json:"info"`
-		ServerStarted time.Time `json:"server_started"`
-		Timestamp     int64     `json:"timestamp"`
-		Requests      int64     `json:"requests"`
+func (s *server) handleStatus() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(s.logInfo)
 	}
+}
 
-	result := answer{
-		Result:        "OK",
-		Info:          "API fully operational",
-		ServerStarted: starttime,
-		Timestamp:     time.Now().Unix(),
-		Requests:      requests,
+func (s *server) handleHealthz() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		response := struct {
+			Result string `json:"result"`
+			Info   string `json:"info"`
+		}{
+			Result: "OK",
+			Info:   "API fully operational",
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(response)
 	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(result)
-
 }
 
 func getCounterfile() string {
