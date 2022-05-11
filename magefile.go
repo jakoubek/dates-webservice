@@ -1,3 +1,4 @@
+//go:build mage
 // +build mage
 
 package main
@@ -6,101 +7,149 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"os/exec"
 	"path"
 	"time"
 
-	"github.com/magefile/mage/mg" // mg contains helpful utility functions, like Deps
-)
-
-const (
-	BUILD_DIR     string = "./bin"
-	BUILD_BINARY  string = "dates-webservice"
-	DEPLOY_TARGET string = "oli@opal5.opalstack.com:apps/datesapi/dates-webservice.new"
-	DEPLOY_DIR    string = "oli@opal5.opalstack.com:apps/datesapi/"
+	_ "github.com/joho/godotenv/autoload"
+	"github.com/magefile/mage/mg"
+	sh "github.com/magefile/mage/sh"
+	"github.com/zhiminwen/magetool/sshkit"
 )
 
 var (
-	buildVersion string
+	buildDir         string
+	buildBinary      string
+	buildBinaryLocal string
+	deployTarget     string
+	deployDir        string
+	sshConnect       string
+	sshPort          string
+	sshUser          string
+	sshKeyfile       string
+	statsApiUrl      string
+	secureKey        string
+
+	buildTime string
 )
 
-// Default target to run when none is specified
-// If not set, running mage will list available targets
-// var Default = Build
+var Default = Debugrun
 
-// A build step that requires additional params, or platform specific steps for example
-func Build() error {
-	os.Setenv("TZ", "Europe/Berlin")
+// restart the newly deployed webserver binary on the production server
+func RestartService() error {
 
-	mg.Deps(InstallDeps)
-	fmt.Println("Building...")
+	mg.Deps(LoadEnvironment)
 
-	versionCmd := exec.Command("git", "rev-parse", "--short", "HEAD")
-	versionCmdOutput, err := versionCmd.Output()
+	fmt.Println("Restarting webserver on production server...")
+
+	productionServer, err := sshkit.NewSSHClient(sshConnect, sshPort, sshUser, "", sshKeyfile)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
-	buildVersion = string(versionCmdOutput)
-	buildTime := time.Now().UTC().Format("2006-01-02_15:04:05")
-	//buildTime = "Hallo"
 
-	cmd := exec.Command("go", "build", "-ldflags", "-X main.version="+buildVersion+" -X main.buildTime="+buildTime, "-o", path.Join(BUILD_DIR, BUILD_BINARY), ".")
-	return cmd.Run()
+	err = productionServer.Execute("cd apps/datesapi && ./update")
+	if err != nil {
+		return err
+	}
+
+	err = productionServer.Close()
+	if err != nil {
+		return err
+	}
+
+	fmt.Println("Restart finished.")
+	return nil
+
 }
 
+// deploy to production server
+func Deploy() error {
+
+	mg.Deps(Build)
+
+	binaryPath := path.Join(buildDir, buildBinary)
+
+	fmt.Println("Deploying to production server...")
+
+	fmt.Println("Copying webserver binary...")
+	err := sh.Run("scp", binaryPath, deployTarget)
+	if err != nil {
+		return err
+	}
+
+	fmt.Println("Deployment finished.")
+	return nil
+}
+
+// build the binary
+func Build() error {
+
+	mg.Deps(Prepare)
+
+	buildPath := path.Join(buildDir, buildBinary)
+
+	fmt.Printf("Building %s...\n", buildPath)
+
+	return sh.RunWith(map[string]string{"GOOS": "linux"}, "go", "build", "-ldflags", "-s -X main.buildTime="+buildTime, "-o", buildPath, "./cmd/server/")
+
+}
+
+// build the binary locally
+func LocalBuild() error {
+
+	mg.Deps(Prepare)
+
+	buildPath := path.Join(buildDir, buildBinaryLocal)
+
+	fmt.Printf("Building locally %s...\n", buildPath)
+
+	return sh.RunWith(map[string]string{"GOOS": "windows"}, "go", "build", "-ldflags", "-s -X main.buildTime="+buildTime, "-o", buildPath, "./cmd/server/")
+
+}
+
+// building and running locally
 func Debugrun() error {
 
-	fmt.Println("Building and running locally...")
+	mg.Deps(Prepare)
 
-	cmd := exec.Command("go", "build", "-o", "dates-webservice.exe", ".")
-	cmd.Run()
+	mg.Deps(LocalBuild)
 
-	cmd = exec.Command("dates-webservice.exe")
+	buildPath := path.Join(buildDir, buildBinaryLocal)
 
-	return cmd.Run()
+	fmt.Printf("Running locally %s...\n", buildPath)
+
+	err := sh.Run(buildPath, "-env", "staging", "-securekey", secureKey)
+
+	return err
 }
 
-// Copies binary, template and config file to Virtualbox Programme folder
-func Deploy() error {
-	mg.Deps(Build)
-	fmt.Println("Deploying...")
-	cmd := exec.Command("scp", path.Join(BUILD_DIR, BUILD_BINARY), DEPLOY_TARGET)
-	cmd.Run()
-	fmt.Println("- binary ok")
-
-	//cmd  = exec.Command("scp", "config.json", DEPLOY_TARGET)
-	//err := sh.Copy(path.Join(DEPLOY_DIR, BUILD_BINARY), path.Join(BUILD_DIR, BUILD_BINARY))
-	//_ = sh.Copy(path.Join(BUILD_DIR, "auflagenmeldung.html"), "auflagenmeldung.html")
-	//cmd = exec.Command("scp", "-r", "views/", DEPLOY_DIR)
-	//cmd.Run()
-	//fmt.Println("- views ok")
-
-	return nil
+func LoadEnvironment() {
+	fmt.Println("Loading environment variables...")
+	buildDir = os.Getenv("BUILD_DIR")
+	buildBinary = os.Getenv("BUILD_BINARY")
+	buildBinaryLocal = os.Getenv("BUILD_BINARY_LOCAL")
+	deployTarget = os.Getenv("DEPLOY_TARGET")
+	deployDir = os.Getenv("DEPLOY_DIR")
+	sshConnect = os.Getenv("SSH_CONNECT")
+	sshPort = os.Getenv("SSH_PORT")
+	sshUser = os.Getenv("SSH_USER")
+	sshKeyfile = os.Getenv("SSH_KEYFILE")
+	statsApiUrl = os.Getenv("STATS_API_URL")
+	secureKey = os.Getenv("SECUREKEY")
+	buildTime = time.Now().Format("2006-01-02_15:04:05")
 }
 
-func Restart() error {
-	fmt.Println("Restarting server...")
-	cmd := exec.Command("ssh", "mopo@opal5.opalstack.com", "views/", DEPLOY_TARGET)
-	cmd.Run()
-	return nil
-}
-
-// A custom install step if you need your bin someplace other than go/bin
-//func Install() error {
-//	mg.Deps(Build)
-//	fmt.Println("Installing...")
-//	return os.Rename("./MyApp", "/usr/bin/MyApp")
-//}
-
-// Manage your deps, or running package managers.
-func InstallDeps() error {
-	fmt.Println("Installing Deps...")
-	//return exec.Command("dep", "ensure").Run()
-	return nil
+// Prepare directory for builds
+func Prepare() {
+	mg.Deps(LoadEnvironment)
+	fmt.Printf("Prepare %s directory...\n", buildDir)
+	if err := os.Mkdir(buildDir, os.ModePerm); err != nil {
+		log.Printf("Creating %s directory didn't work: ", buildDir, err.Error())
+	}
 }
 
 // Clean up after yourself
 func Clean() {
+	mg.Deps(LoadEnvironment)
 	fmt.Println("Cleaning...")
-	os.RemoveAll("bin")
+	os.RemoveAll(buildDir)
 }
