@@ -36,6 +36,12 @@ func WithUserFormat(format string) DateCoreConfig {
 	}
 }
 
+func WithLanguage(language string) DateCoreConfig {
+	return func(dc *DateCore) {
+		dc.language = language
+	}
+}
+
 func WithDayFormat() DateCoreConfig {
 	return func(dc *DateCore) {
 		dc.dateFormat = "2006-01-02"

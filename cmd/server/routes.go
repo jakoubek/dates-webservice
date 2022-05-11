@@ -24,6 +24,7 @@ func (app *application) routes() http.Handler {
 	router.Group(func(router chi.Router) {
 		router.Use(app.checkNoLogging)
 		router.Use(app.logRequests)
+		router.Use(app.readQueryParams)
 
 		router.Get("/today", app.todayHandler)
 		router.Get("/tomorrow", app.tomorrowHandler)

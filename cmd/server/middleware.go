@@ -112,6 +112,23 @@ func (app *application) rateLimit(next http.Handler) http.Handler {
 	})
 }
 
+func (app *application) readQueryParams(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		format := ""
+		lang := ""
+		if r.URL.Query().Has("format") {
+			r.URL.Query().Get("format")
+		}
+		if r.URL.Query().Has("lang") {
+			r.URL.Query().Get("lang")
+		}
+		ctx := context.WithValue(context.Background(), "format", format)
+		ctx = context.WithValue(ctx, "lang", lang)
+		r = r.WithContext(ctx)
+		next.ServeHTTP(w, r)
+	})
+}
+
 func (app *application) checkNoLogging(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		isNoLoggingSet := false
