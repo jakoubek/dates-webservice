@@ -5,7 +5,6 @@ import (
 	"errors"
 	"expvar"
 	"fmt"
-	"log"
 	"net"
 	"net/http"
 	"strings"
@@ -117,10 +116,10 @@ func (app *application) readQueryParams(next http.Handler) http.Handler {
 		format := ""
 		lang := ""
 		if r.URL.Query().Has("format") {
-			r.URL.Query().Get("format")
+			format = r.URL.Query().Get("format")
 		}
 		if r.URL.Query().Has("lang") {
-			r.URL.Query().Get("lang")
+			lang = r.URL.Query().Get("lang")
 		}
 		ctx := context.WithValue(context.Background(), "format", format)
 		ctx = context.WithValue(ctx, "lang", lang)
@@ -148,7 +147,7 @@ func (app *application) logRequests(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		next.ServeHTTP(w, r)
 		if strings.Contains(r.Host, "localhost") {
-			log.Println("Log request for route:", r.URL.Path)
+			app.logger.Println("Log request for route:", r.URL.Path)
 		} else {
 			if r.RequestURI != "/" && r.RequestURI != "/healthz" && r.Context().Value("nologging") == false {
 				go internal.LogRequestToPlausible(internal.NewLogRequestBody(r.URL.Path, r.Header.Get("X-Forwarded-For")), app.config.statsApiUrl)
