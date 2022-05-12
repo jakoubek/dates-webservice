@@ -117,7 +117,7 @@ func Debugrun() error {
 
 	fmt.Printf("Running locally %s...\n", buildPath)
 
-	err := sh.Run(buildPath, "-env", "staging", "-securekey", secureKey)
+	err := sh.RunV(buildPath, "-env", "development", "-securekey", secureKey)
 
 	return err
 }
