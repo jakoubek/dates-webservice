@@ -20,8 +20,9 @@ type config struct {
 		burst   int
 		enabled bool
 	}
-	securekey   string
-	statsApiUrl string
+	securekey      string
+	statsApiUrl    string
+	statsApiDomain string
 }
 
 type application struct {
@@ -44,6 +45,7 @@ func main() {
 	flag.BoolVar(&cfg.limiter.enabled, "limiter-enabled", true, "Enable rate limiter")
 
 	flag.StringVar(&cfg.statsApiUrl, "statsapiurl", "", "Endpoint URL for the stats API")
+	flag.StringVar(&cfg.statsApiDomain, "statsapidomain", "", "Base domain for the stats API")
 	flag.StringVar(&cfg.securekey, "securekey", "", "Securekey for accessing the metrics endpoint")
 
 	displayVersion := flag.Bool("version", false, "Display version and exit")
