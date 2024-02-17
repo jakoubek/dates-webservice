@@ -11,7 +11,7 @@ import (
 
 func (app *application) indexHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		//http.Redirect(w, r, "/", http.StatusFound)
+
 		data := envelope{
 			"index": 1,
 		}
@@ -54,8 +54,8 @@ func (app *application) healthcheckHandler(w http.ResponseWriter, r *http.Reques
 func (app *application) todayHandler(w http.ResponseWriter, r *http.Request) {
 
 	dc := dates.NewDateCore(
-		dates.WithUserFormat(r.Context().Value("format").(string)),
-		dates.WithLanguage(r.Context().Value("lang").(string)),
+		dates.WithUserFormat(getFormatFromContext(r.Context())),
+		dates.WithLanguage(getLangFromContext(r.Context())),
 	)
 
 	data := envelope{
@@ -72,8 +72,8 @@ func (app *application) tomorrowHandler(w http.ResponseWriter, r *http.Request) 
 
 	dc := dates.NewDateCore(
 		dates.WithDayAdd(1),
-		dates.WithUserFormat(r.Context().Value("format").(string)),
-		dates.WithLanguage(r.Context().Value("lang").(string)),
+		dates.WithUserFormat(getFormatFromContext(r.Context())),
+		dates.WithLanguage(getLangFromContext(r.Context())),
 	)
 
 	data := envelope{
@@ -90,8 +90,8 @@ func (app *application) yesterdayHandler(w http.ResponseWriter, r *http.Request)
 
 	dc := dates.NewDateCore(
 		dates.WithDayAdd(-1),
-		dates.WithUserFormat(r.Context().Value("format").(string)),
-		dates.WithLanguage(r.Context().Value("lang").(string)),
+		dates.WithUserFormat(getFormatFromContext(r.Context())),
+		dates.WithLanguage(getLangFromContext(r.Context())),
 	)
 
 	data := envelope{
@@ -108,8 +108,8 @@ func (app *application) thisYearHandler(w http.ResponseWriter, r *http.Request) 
 
 	dc := dates.NewDateCore(
 		dates.WithYearFormat(),
-		dates.WithUserFormat(r.Context().Value("format").(string)),
-		dates.WithLanguage(r.Context().Value("lang").(string)),
+		dates.WithUserFormat(getFormatFromContext(r.Context())),
+		dates.WithLanguage(getLangFromContext(r.Context())),
 	)
 
 	data := envelope{
@@ -127,8 +127,8 @@ func (app *application) lastYearHandler(w http.ResponseWriter, r *http.Request) 
 	dc := dates.NewDateCore(
 		dates.WithYearAdd(-1),
 		dates.WithYearFormat(),
-		dates.WithUserFormat(r.Context().Value("format").(string)),
-		dates.WithLanguage(r.Context().Value("lang").(string)),
+		dates.WithUserFormat(getFormatFromContext(r.Context())),
+		dates.WithLanguage(getLangFromContext(r.Context())),
 	)
 
 	data := envelope{
@@ -146,8 +146,8 @@ func (app *application) nextYearHandler(w http.ResponseWriter, r *http.Request) 
 	dc := dates.NewDateCore(
 		dates.WithYearAdd(1),
 		dates.WithYearFormat(),
-		dates.WithUserFormat(r.Context().Value("format").(string)),
-		dates.WithLanguage(r.Context().Value("lang").(string)),
+		dates.WithUserFormat(getFormatFromContext(r.Context())),
+		dates.WithLanguage(getLangFromContext(r.Context())),
 	)
 
 	data := envelope{
@@ -164,8 +164,8 @@ func (app *application) thisMonthHandler(w http.ResponseWriter, r *http.Request)
 
 	dc := dates.NewDateCore(
 		dates.WithMonthFormat(),
-		dates.WithUserFormat(r.Context().Value("format").(string)),
-		dates.WithLanguage(r.Context().Value("lang").(string)),
+		dates.WithUserFormat(getFormatFromContext(r.Context())),
+		dates.WithLanguage(getLangFromContext(r.Context())),
 	)
 
 	data := envelope{
@@ -183,8 +183,8 @@ func (app *application) nextMonthHandler(w http.ResponseWriter, r *http.Request)
 	dc := dates.NewDateCore(
 		dates.WithMonthAdd(1),
 		dates.WithMonthFormat(),
-		dates.WithUserFormat(r.Context().Value("format").(string)),
-		dates.WithLanguage(r.Context().Value("lang").(string)),
+		dates.WithUserFormat(getFormatFromContext(r.Context())),
+		dates.WithLanguage(getLangFromContext(r.Context())),
 	)
 
 	data := envelope{
@@ -202,8 +202,8 @@ func (app *application) lastMonthHandler(w http.ResponseWriter, r *http.Request)
 	dc := dates.NewDateCore(
 		dates.WithMonthAdd(-1),
 		dates.WithMonthFormat(),
-		dates.WithUserFormat(r.Context().Value("format").(string)),
-		dates.WithLanguage(r.Context().Value("lang").(string)),
+		dates.WithUserFormat(getFormatFromContext(r.Context())),
+		dates.WithLanguage(getLangFromContext(r.Context())),
 	)
 
 	data := envelope{
@@ -221,8 +221,8 @@ func (app *application) lastOfMonthHandler(w http.ResponseWriter, r *http.Reques
 	dc := dates.NewDateCore(
 		dates.WithLastOfMonth(),
 		dates.WithDayFormat(),
-		dates.WithUserFormat(r.Context().Value("format").(string)),
-		dates.WithLanguage(r.Context().Value("lang").(string)),
+		dates.WithUserFormat(getFormatFromContext(r.Context())),
+		dates.WithLanguage(getLangFromContext(r.Context())),
 	)
 
 	data := envelope{
@@ -239,8 +239,8 @@ func (app *application) weeknumberHandler(w http.ResponseWriter, r *http.Request
 
 	dc := dates.NewDateCore(
 		dates.WithWeeknumber(),
-		dates.WithUserFormat(r.Context().Value("format").(string)),
-		dates.WithLanguage(r.Context().Value("lang").(string)),
+		dates.WithUserFormat(getFormatFromContext(r.Context())),
+		dates.WithLanguage(getLangFromContext(r.Context())),
 	)
 
 	data := envelope{
@@ -289,8 +289,8 @@ func (app *application) timeHandler(w http.ResponseWriter, r *http.Request) {
 
 	dc := dates.NewDateCore(
 		dates.WithDatetimeFormat(),
-		dates.WithUserFormat(r.Context().Value("format").(string)),
-		dates.WithLanguage(r.Context().Value("lang").(string)),
+		dates.WithUserFormat(getFormatFromContext(r.Context())),
+		dates.WithLanguage(getLangFromContext(r.Context())),
 	)
 
 	data := envelope{

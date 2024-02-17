@@ -5,6 +5,7 @@ import (
 	"errors"
 	"expvar"
 	"fmt"
+	"log"
 	"net"
 	"net/http"
 	"strings"
@@ -14,6 +15,36 @@ import (
 	"github.com/jakoubek/dates-webservice/internal"
 	"golang.org/x/time/rate"
 )
+
+type contextKey string
+
+const formatContextKey contextKey = "format"
+const langContextKey contextKey = "lang"
+
+func getFormatFromContext(ctx context.Context) string {
+	format, ok := ctx.Value(formatContextKey).(string)
+	if !ok {
+		return ""
+	}
+	return format
+}
+
+func getLangFromContext(ctx context.Context) string {
+	lang, ok := ctx.Value(langContextKey).(string)
+	if !ok {
+		return ""
+	}
+	return lang
+}
+
+func (app *application) initContext(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := context.Background()
+		ctx = context.WithValue(ctx, formatContextKey, "")
+		ctx = context.WithValue(ctx, langContextKey, "en")
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
 
 func (app *application) metrics(next http.Handler) http.Handler {
 	// Initialize the new expvar variables when the middleware chain is first built.
@@ -111,7 +142,18 @@ func (app *application) rateLimit(next http.Handler) http.Handler {
 	})
 }
 
-func (app *application) readQueryParams(next http.Handler) http.Handler {
+func (app *application) readHeaders(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if lang := r.Header.Get("lang"); lang != "" {
+			log.Println("Lang-Header gesetzt!", r.Header.Get("lang"))
+			ctx := context.WithValue(r.Context(), langContextKey, lang)
+			r = r.WithContext(ctx)
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
+func (app *application) readQueryParams1(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		format := ""
 		lang := ""
@@ -121,10 +163,22 @@ func (app *application) readQueryParams(next http.Handler) http.Handler {
 		if r.URL.Query().Has("lang") {
 			lang = r.URL.Query().Get("lang")
 		}
-		ctx := context.WithValue(context.Background(), "format", format)
-		ctx = context.WithValue(ctx, "lang", lang)
-		r = r.WithContext(ctx)
-		next.ServeHTTP(w, r)
+		ctx := context.WithValue(r.Context(), formatContextKey, format)
+		ctx = context.WithValue(ctx, langContextKey, lang)
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
+func (app *application) readQueryParams(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+		if r.URL.Query().Has("format") {
+			ctx = context.WithValue(ctx, formatContextKey, r.URL.Query().Get("format"))
+		}
+		if r.URL.Query().Has("lang") {
+			ctx = context.WithValue(ctx, langContextKey, r.URL.Query().Get("lang"))
+		}
+		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
 
@@ -137,7 +191,7 @@ func (app *application) checkNoLogging(next http.Handler) http.Handler {
 		if r.Header.Get("NoLogging") == "1" {
 			isNoLoggingSet = true
 		}
-		ctx := context.WithValue(context.Background(), "nologging", isNoLoggingSet)
+		ctx := context.WithValue(context.Background(), contextKey("nologging"), isNoLoggingSet)
 		r = r.WithContext(ctx)
 		next.ServeHTTP(w, r)
 	})
@@ -149,7 +203,7 @@ func (app *application) logRequests(next http.Handler) http.Handler {
 		if strings.Contains(r.Host, "localhost") {
 			app.logger.Println("Log request for route:", r.URL.Path)
 		} else {
-			if r.RequestURI != "/" && r.RequestURI != "/healthz" && r.Context().Value("nologging") == false {
+			if r.RequestURI != "/" && r.RequestURI != "/healthz" && r.Context().Value(contextKey("nologging")) == false {
 				go internal.LogRequestToPlausible(internal.NewLogRequestBody(app.config.statsApiUrl, r.URL.Path, r.Header.Get("X-Forwarded-For")), app.config.statsApiUrl)
 			}
 		}

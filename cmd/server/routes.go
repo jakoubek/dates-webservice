@@ -9,6 +9,9 @@ import (
 func (app *application) routes() http.Handler {
 	router := chi.NewRouter()
 
+	//router.Use(middleware.Logger)
+
+	//router.Use(app.initContext)
 	router.Use(app.metrics)
 	router.Use(app.recoverPanic)
 	router.Use(app.rateLimit)
@@ -24,6 +27,7 @@ func (app *application) routes() http.Handler {
 	router.Group(func(router chi.Router) {
 		router.Use(app.checkNoLogging)
 		router.Use(app.logRequests)
+		router.Use(app.readHeaders)
 		router.Use(app.readQueryParams)
 
 		router.Get("/today", app.todayHandler)
