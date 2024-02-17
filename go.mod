@@ -9,6 +9,7 @@ require (
 	github.com/Masterminds/sprig v2.22.0+incompatible // indirect
 	github.com/fatih/color v1.16.0 // indirect
 	github.com/go-chi/chi/v5 v5.0.7
+	github.com/golang-module/carbon/v2 v2.3.8 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/gosuri/uilive v0.0.4 // indirect
 	github.com/huandu/xstrings v1.4.0 // indirect

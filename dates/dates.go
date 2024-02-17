@@ -9,9 +9,9 @@ import (
 type DateCoreConfig func(core *DateCore)
 
 type DateCore struct {
-	dateObject time.Time
-	language string
-	userFormat string
+	dateObject   time.Time
+	language     string
+	userFormat   string
 	ResultString string
 }
 

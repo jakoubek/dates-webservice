@@ -1,6 +1,9 @@
 package dates
 
 import (
+	"fmt"
+	"github.com/golang-module/carbon/v2"
+	"log"
 	"strconv"
 	"time"
 
@@ -12,6 +15,8 @@ const defaultDateFormat string = "2006-01-02"
 type DateCoreConfig func(core *DateCore)
 
 type DateCore struct {
+	useCarbon    bool
+	carbonObject carbon.Carbon
 	dateObject   time.Time
 	dateFormat   string
 	language     string
@@ -20,9 +25,18 @@ type DateCore struct {
 }
 
 func NewDateCore(opts ...DateCoreConfig) *DateCore {
+
+	carbon.SetDefault(carbon.Default{
+		Layout:       carbon.DateTimeLayout,
+		Timezone:     carbon.Local,
+		WeekStartsAt: carbon.Monday,
+		Locale:       "en",
+	})
+
 	dc := DateCore{
-		dateObject: time.Now().UTC(),
-		dateFormat: defaultDateFormat,
+		carbonObject: carbon.Now(),
+		dateObject:   time.Now().UTC(),
+		dateFormat:   defaultDateFormat,
 	}
 	for _, opt := range opts {
 		opt(&dc)
@@ -39,6 +53,7 @@ func WithUserFormat(format string) DateCoreConfig {
 func WithLanguage(language string) DateCoreConfig {
 	return func(dc *DateCore) {
 		dc.language = language
+		dc.carbonObject.SetLocale(language)
 	}
 }
 
@@ -50,6 +65,7 @@ func WithDayFormat() DateCoreConfig {
 
 func WithMonthFormat() DateCoreConfig {
 	return func(dc *DateCore) {
+		dc.useCarbon = true
 		dc.dateFormat = "January 2006"
 	}
 }
@@ -68,18 +84,21 @@ func WithDatetimeFormat() DateCoreConfig {
 
 func WithDayAdd(numberOfDays int) DateCoreConfig {
 	return func(dc *DateCore) {
+		dc.carbonObject = dc.carbonObject.AddDays(numberOfDays)
 		dc.dateObject = dc.dateObject.AddDate(0, 0, numberOfDays)
 	}
 }
 
 func WithMonthAdd(numberOfMonths int) DateCoreConfig {
 	return func(dc *DateCore) {
+		dc.carbonObject = dc.carbonObject.AddMonths(numberOfMonths)
 		dc.dateObject = dc.dateObject.AddDate(0, numberOfMonths, 0)
 	}
 }
 
 func WithYearAdd(numberOfYears int) DateCoreConfig {
 	return func(dc *DateCore) {
+		dc.carbonObject = dc.carbonObject.AddYears(numberOfYears)
 		dc.dateObject = dc.dateObject.AddDate(numberOfYears, 0, 0)
 	}
 }
@@ -114,7 +133,12 @@ func WithTimestamp(asMilliseconds bool) DateCoreConfig {
 
 func (dc *DateCore) ResultString() string {
 	if dc.resultString == "" {
-		dc.resultString = dc.dateObject.Format(dc.getFormat())
+		if dc.useCarbon {
+			log.Println("Format: ", dc.getFormat())
+			dc.resultString = fmt.Sprintf("%s %d", dc.carbonObject.ToMonthString(), dc.carbonObject.Year())
+		} else {
+			dc.resultString = dc.dateObject.Format(dc.getFormat())
+		}
 	}
 
 	return dc.resultString
