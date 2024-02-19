@@ -1,7 +1,6 @@
 package dates
 
 import (
-	"log"
 	"strconv"
 	"strings"
 	"time"
@@ -135,7 +134,6 @@ func WithTimestamp(asMilliseconds bool) DateCoreConfig {
 }
 
 func (dc *DateCore) ResultString() string {
-	log.Println("ResultString")
 	if dc.resultString == "" {
 		dc.resultString = dc.dateObject.Format(dc.getFormat())
 		if dc.useCarbon {
