@@ -1,11 +1,12 @@
 package dates
 
 import (
-	"fmt"
-	"github.com/golang-module/carbon/v2"
 	"log"
 	"strconv"
+	"strings"
 	"time"
+
+	"github.com/golang-module/carbon/v2"
 
 	"github.com/jakoubek/dates-webservice/l10n"
 )
@@ -37,6 +38,7 @@ func NewDateCore(opts ...DateCoreConfig) *DateCore {
 		carbonObject: carbon.Now(),
 		dateObject:   time.Now().UTC(),
 		dateFormat:   defaultDateFormat,
+		useCarbon:    true,
 	}
 	for _, opt := range opts {
 		opt(&dc)
@@ -59,6 +61,7 @@ func WithLanguage(language string) DateCoreConfig {
 
 func WithDayFormat() DateCoreConfig {
 	return func(dc *DateCore) {
+		dc.useCarbon = true
 		dc.dateFormat = "2006-01-02"
 	}
 }
@@ -132,12 +135,32 @@ func WithTimestamp(asMilliseconds bool) DateCoreConfig {
 }
 
 func (dc *DateCore) ResultString() string {
+	log.Println("ResultString")
 	if dc.resultString == "" {
+		dc.resultString = dc.dateObject.Format(dc.getFormat())
 		if dc.useCarbon {
-			log.Println("Format: ", dc.getFormat())
-			dc.resultString = fmt.Sprintf("%s %d", dc.carbonObject.ToMonthString(), dc.carbonObject.Year())
-		} else {
-			dc.resultString = dc.dateObject.Format(dc.getFormat())
+
+			monthOk := false
+			weekdayOk := false
+
+			format := dc.getFormat()
+			trimmedFormat := format
+			if strings.Contains(trimmedFormat, "January") {
+				trimmedFormat = strings.Replace(trimmedFormat, "January", dc.carbonObject.ToMonthString(), 1)
+				monthOk = true
+			}
+			if strings.Contains(trimmedFormat, "Jan") && monthOk == false {
+				trimmedFormat = strings.Replace(trimmedFormat, "Jan", dc.carbonObject.ToShortMonthString(), 1)
+			}
+			if strings.Contains(trimmedFormat, "Monday") {
+				trimmedFormat = strings.Replace(trimmedFormat, "Monday", dc.carbonObject.ToWeekString(), 1)
+				weekdayOk = true
+			}
+			if strings.Contains(trimmedFormat, "Mon") && weekdayOk == false {
+				trimmedFormat = strings.Replace(trimmedFormat, "Mon", dc.carbonObject.ToShortWeekString(), 1)
+			}
+
+			dc.resultString = dc.carbonObject.Layout(trimmedFormat)
 		}
 	}
 
