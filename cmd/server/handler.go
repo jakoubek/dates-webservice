@@ -25,15 +25,22 @@ func (app *application) indexHandler() http.HandlerFunc {
 
 func (app *application) statusHandler(w http.ResponseWriter, r *http.Request) {
 	requests, _ := strconv.Atoi(expvar.Get("total_requests_received").String())
+
+	requestStats, err := app.logdatabase.GetRequestsPerEndpoint()
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+	}
+
 	data := envelope{
 		"version":        version,
 		"build_time":     buildTime,
 		"server_started": app.startupTime.UTC().String(),
 		"requests":       requests,
 		"timestamp":      time.Now().Unix(),
+		"endpoints":      requestStats,
 	}
 
-	err := app.writeJSON(w, http.StatusOK, data, nil)
+	err = app.writeJSON(w, http.StatusOK, data, nil)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 	}

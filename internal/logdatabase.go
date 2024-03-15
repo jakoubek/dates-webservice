@@ -56,6 +56,30 @@ func (ldb *Logdatabase) CreateRequest(request string, lang string, format string
 
 }
 
+type RequestStat struct {
+	EndpointName     string `json:"endpointName"`
+	NumberOfRequests int    `json:"numberOfRequests"`
+}
+
+func (ldb *Logdatabase) GetRequestsPerEndpoint() ([]RequestStat, error) {
+
+	qry := `SELECT request AS endpoint, COUNT(*) AS number FROM request GROUP BY endpoint ORDER BY number DESC`
+
+	rows, err := ldb.db.Query(qry)
+	if err != nil {
+		return nil, fmt.Errorf("error getting request count from database: %s", err.Error())
+	}
+	var result []RequestStat
+	for rows.Next() {
+		var r RequestStat
+		if err := rows.Scan(&r.EndpointName, &r.NumberOfRequests); err != nil {
+			return nil, fmt.Errorf("error getting row: %s", err.Error())
+		}
+		result = append(result, r)
+	}
+	return result, nil
+}
+
 func (ldb *Logdatabase) createSchema() error {
 
 	ddl := `CREATE TABLE IF NOT EXISTS request (
