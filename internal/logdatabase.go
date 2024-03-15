@@ -61,23 +61,25 @@ type RequestStat struct {
 	NumberOfRequests int    `json:"numberOfRequests"`
 }
 
-func (ldb *Logdatabase) GetRequestsPerEndpoint() ([]RequestStat, error) {
+func (ldb *Logdatabase) GetRequestsPerEndpoint() ([]RequestStat, int, error) {
 
 	qry := `SELECT request AS endpoint, COUNT(*) AS number FROM request GROUP BY endpoint ORDER BY number DESC`
 
 	rows, err := ldb.db.Query(qry)
 	if err != nil {
-		return nil, fmt.Errorf("error getting request count from database: %s", err.Error())
+		return nil, 0, fmt.Errorf("error getting request count from database: %s", err.Error())
 	}
 	var result []RequestStat
+	var allRequests int
 	for rows.Next() {
 		var r RequestStat
 		if err := rows.Scan(&r.EndpointName, &r.NumberOfRequests); err != nil {
-			return nil, fmt.Errorf("error getting row: %s", err.Error())
+			return nil, 0, fmt.Errorf("error getting row: %s", err.Error())
 		}
 		result = append(result, r)
+		allRequests += r.NumberOfRequests
 	}
-	return result, nil
+	return result, allRequests, nil
 }
 
 func (ldb *Logdatabase) createSchema() error {
