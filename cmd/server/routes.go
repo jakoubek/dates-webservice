@@ -27,6 +27,7 @@ func (app *application) routes() http.Handler {
 	router.Group(func(router chi.Router) {
 		router.Use(app.checkNoLogging)
 		router.Use(app.logRequests)
+		router.Use(app.logRequestsToDatabase)
 		router.Use(app.readHeaders)
 		router.Use(app.readQueryParams)
 

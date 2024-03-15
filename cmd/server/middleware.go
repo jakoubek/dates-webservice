@@ -210,6 +210,18 @@ func (app *application) logRequests(next http.Handler) http.Handler {
 	})
 }
 
+func (app *application) logRequestsToDatabase(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		next.ServeHTTP(w, r)
+		ls := Logstruct{
+			request: r.URL.Path,
+			lang:    r.URL.Query().Get("lang"),
+			format:  r.URL.Query().Get("format"),
+		}
+		go app.LogRequestToDatabase(&ls)
+	})
+}
+
 func (app *application) recoverPanic(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Create a deferred function (which will always be run in the event of a panic

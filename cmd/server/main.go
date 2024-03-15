@@ -9,13 +9,16 @@ import (
 	"os"
 	"runtime"
 	"time"
+
+	"github.com/jakoubek/dates-webservice/internal"
 )
 
 type config struct {
-	port        int
-	env         string
-	logfilePath string
-	limiter     struct {
+	port            int
+	env             string
+	logfilePath     string
+	logdatabasePath string
+	limiter         struct {
 		rps     float64
 		burst   int
 		enabled bool
@@ -31,6 +34,8 @@ type application struct {
 	startupTime time.Time
 
 	logger *log.Logger
+
+	logdatabase *internal.Logdatabase
 }
 
 func main() {
@@ -39,6 +44,7 @@ func main() {
 	flag.IntVar(&cfg.port, "port", 4000, "Web server port")
 	flag.StringVar(&cfg.env, "env", "development", "Environment (development|staging|production)")
 	flag.StringVar(&cfg.logfilePath, "logfile", "./logfile.log", "Path and name of logfile")
+	flag.StringVar(&cfg.logdatabasePath, "logdatabase", "~/datesapi.db3", "Path and name of the SQLite log database")
 
 	flag.Float64Var(&cfg.limiter.rps, "limiter-rps", 1, "Rate limiter maximum requests per second")
 	flag.IntVar(&cfg.limiter.burst, "limiter-burst", 3, "Rate limiter maximum burst")
@@ -73,10 +79,13 @@ func main() {
 		logger.SetOutput(mw)
 	}
 
+	ldb := internal.NewLogdatabase(internal.WithDatabasePath(cfg.logdatabasePath))
+
 	app := &application{
 		config:      cfg,
 		startupTime: time.Now(),
 		logger:      logger,
+		logdatabase: ldb,
 	}
 
 	expvar.NewString("version").Set(version)
@@ -93,5 +102,17 @@ func main() {
 	if err != nil {
 		logger.Fatalln(err)
 	}
+
+}
+
+type Logstruct struct {
+	request string
+	lang    string
+	format  string
+}
+
+func (app *application) LogRequestToDatabase(ls *Logstruct) {
+	app.logger.Println("Log request to database:", ls.request)
+	app.logdatabase.CreateRequest(ls.request, ls.lang, ls.format)
 
 }

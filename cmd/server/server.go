@@ -47,6 +47,11 @@ func (app *application) serve() error {
 		return err
 	}
 
+	err = app.logdatabase.CloseDatabase()
+	if err != nil {
+		app.logger.Println(err.Error())
+	}
+
 	app.logger.Printf("Stopped server: %s", srv.Addr)
 
 	return nil
