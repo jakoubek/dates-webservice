@@ -69,6 +69,7 @@ func (ldb *Logdatabase) GetRequestsPerEndpoint() ([]RequestStat, int, error) {
 	if err != nil {
 		return nil, 0, fmt.Errorf("error getting request count from database: %s", err.Error())
 	}
+	defer rows.Close()
 	var result []RequestStat
 	var allRequests int
 	for rows.Next() {
