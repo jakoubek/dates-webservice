@@ -20,7 +20,7 @@ func (app *application) routes() http.Handler {
 	router.NotFound(http.HandlerFunc(app.notFoundResponse))
 	router.MethodNotAllowed(http.HandlerFunc(app.methodNotAllowedResponse))
 
-	router.Get("/", app.indexHandler())
+	router.Get("/", app.indexHandler)
 	router.Get("/status", app.statusHandler)
 	router.Get("/healthz", app.healthcheckHandler)
 

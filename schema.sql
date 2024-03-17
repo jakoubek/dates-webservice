@@ -4,4 +4,4 @@ CREATE TABLE IF NOT EXISTS request (
     lang TEXT,
     format TEXT,
     created_at TEXT DEFAULT CURRENT_TIMESTAMP
-)
+);

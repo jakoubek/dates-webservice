@@ -9,7 +9,11 @@ import (
 	"github.com/jakoubek/dates-webservice/internal/dates"
 )
 
-func (app *application) indexHandler() http.HandlerFunc {
+func (app *application) indexHandler(w http.ResponseWriter, r *http.Request) {
+	http.Redirect(w, r, "https://datesapi.net/?ref=api", 302)
+}
+
+func (app *application) indexHandler2() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		data := envelope{
