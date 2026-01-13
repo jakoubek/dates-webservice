@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"runtime"
 
 	"github.com/magefile/mage/mg"
 	"github.com/magefile/mage/sh"
@@ -13,30 +14,65 @@ import (
 
 const (
 	BUILD_DIR         string = "./dist"
-	BUILD_BINARY      string = "datesapi-server"
 	SOURCE_ENTRY      string = "./cmd/server/."
 	LOCAL_DEPLOY_PATH string = "D:/VirtualboxOrdner/PSG_Serverprogramme/psg-setbildung-arvato"
 )
 
+var buildBinary string
+var buildBinaryLinux string
+
+func init() {
+	buildBinaryLinux = "datesapi-server"
+	buildBinary = buildBinaryLinux + ".exe"
+}
+
 var Default = Run
 
+// Build builds the application for the current platform
 func Build() error {
+	switch runtime.GOOS {
+	case "linux":
+		return BuildLinux()
+	case "windows":
+		return BuildWindows()
+	default:
+		return fmt.Errorf("unsupported platform: %s", runtime.GOOS)
+	}
+}
+
+func BuildLinux() error {
 	mg.Deps(Clean)
 
-	fmt.Println("Building...")
+	fmt.Println("Building for Linux...")
+
+	os.MkdirAll(BUILD_DIR, 0755)
 
 	gocmd := mg.GoCmd()
 
-	return sh.RunV(gocmd, "build", "-o", path.Join(BUILD_DIR, BUILD_BINARY), "-ldflags="+flags(), SOURCE_ENTRY)
+	env := map[string]string{
+		"GOOS":   "linux",
+		"GOARCH": "amd64",
+	}
+
+	return sh.RunWithV(env, gocmd, "build", "-o", path.Join(BUILD_DIR, buildBinaryLinux), "-ldflags="+flags(), SOURCE_ENTRY)
 }
 
-func Deploy() error {
-	//mg.Deps(Build, CopyAdditional)
-	mg.Deps(Build)
+// BuildWindows builds the application for a Windows target
+func BuildWindows() error {
+	mg.Deps(Clean)
 
-	fmt.Println("Deploy locally...")
-	return sh.Copy(path.Join(LOCAL_DEPLOY_PATH, BUILD_BINARY), path.Join(BUILD_DIR, BUILD_BINARY))
+	fmt.Println("Building for Windows...")
 
+	os.MkdirAll(BUILD_DIR, 0755)
+
+	gocmd := mg.GoCmd()
+
+	env := map[string]string{
+		"GOOS":   "windows",
+		"GOARCH": "amd64",
+	}
+
+	return sh.RunWithV(env, gocmd, "build", "-o", path.Join(BUILD_DIR, buildBinary), "-ldflags="+flags(), SOURCE_ENTRY)
 }
 
 func CopyAdditional() error {

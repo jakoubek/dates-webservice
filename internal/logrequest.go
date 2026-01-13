@@ -20,7 +20,7 @@ func NewLogRequestBody(domain string, path string, address string) *logRequestBo
 	return &logRequestBody{
 		Name:          "pageview",
 		Url:           fmt.Sprintf("https://%s%s", domain, path),
-		Domain:        "api.onetimecode.net",
+		Domain:        "api.datesapi.net",
 		RemoteAddress: address,
 		path:          path,
 	}
